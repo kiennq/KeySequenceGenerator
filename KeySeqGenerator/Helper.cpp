@@ -5,7 +5,6 @@
 
 using namespace std;
 
-static Helper* helper = NULL;
 map<wchar_t, wchar_t> Helper::_upper = []()->map<wchar_t, wchar_t>
 {
     map<wchar_t, wchar_t> m;
@@ -78,7 +77,7 @@ map<wchar_t, wchar_t> Helper::_upper = []()->map<wchar_t, wchar_t>
     m[0x1ef9] = 0x1ef8;
     return m;
 }();
-map<wchar_t, wchar_t> Helper::_lower = []()->map<wchar_t, wchar_t>
+map<wchar_t, wchar_t> Helper::_lower ([]()->map<wchar_t, wchar_t>
 {
     map<wchar_t, wchar_t> m;
     m[0xc0] = 0xe0;
@@ -149,33 +148,106 @@ map<wchar_t, wchar_t> Helper::_lower = []()->map<wchar_t, wchar_t>
     m[0x1ef6] = 0x1ef7;
     m[0x1ef8] = 0x1ef9;
     return m;
-}();
-
-Helper* Helper::instance()
+}());
+set<wchar_t> Helper::_consonant ([]()->set<wchar_t>
 {
-    if (helper) return helper;
-	else return helper = new Helper();
-}
-
-void Helper::destroy()
+    set<wchar_t> s;
+    s.insert(0x62);
+    s.insert(0x63);
+    s.insert(0x64);
+    s.insert(0x111);
+    s.insert(0x67);
+    s.insert(0x68);
+    s.insert(0x6b);
+    s.insert(0x6c);
+    s.insert(0x6d);
+    s.insert(0x6e);
+    s.insert(0x70);
+    s.insert(0x71);
+    s.insert(0x72);
+    s.insert(0x73);
+    s.insert(0x74);
+    s.insert(0x75);
+    s.insert(0x76);
+    s.insert(0x78);
+    s.insert(0x42);
+    s.insert(0x43);
+    s.insert(0x44);
+    s.insert(0x110);
+    s.insert(0x47);
+    s.insert(0x48);
+    s.insert(0x4b);
+    s.insert(0x4c);
+    s.insert(0x4d);
+    s.insert(0x4e);
+    s.insert(0x50);
+    s.insert(0x51);
+    s.insert(0x52);
+    s.insert(0x53);
+    s.insert(0x54);
+    s.insert(0x55);
+    s.insert(0x56);
+    s.insert(0x58);
+    return s;
+}());
+set<wstring> Helper::_leadCons ([]()->set<wstring>
 {
-    if (!helper) return;
-    delete helper;
-    helper = NULL;
-}
+	wifstream fin(L"_leadConsonant.txt");
+	fin.imbue(locale(fin.getloc(), new codecvt_utf16<wchar_t, 0x10ffff, little_endian>));
+
+    set<wstring> l;
+
+	for (wstring ls; fin >> ls; l.insert(ls));
+	fin.close();
+    return l;
+}());
+map<wchar_t, Helper::ToneDict> Helper::_tone ([]()->map<wchar_t, Helper::ToneDict>
+{
+	wifstream fin(L"_toneDict.txt");
+	fin.imbue(locale(fin.getloc(), new codecvt_utf16<wchar_t, 0x10ffff, little_endian>));
+
+    map<wchar_t, Helper::ToneDict> m;
+
+    int tone;
+
+	for (wchar_t src, org; fin >> src >> org >> tone; m.insert(make_pair(src, Helper::ToneDict(src, org, tone))));
+	fin.close();
+    return m;
+}());
+multimap<wstring, Helper::DialectDict> Helper::_telex([]()->multimap<wstring, Helper::DialectDict>
+{
+	wifstream fin(L"_telexDict.txt");
+	fin.imbue(locale(fin.getloc(), new codecvt_utf16<wchar_t, 0x10ffff, little_endian>));
+
+	multimap<wstring, Helper::DialectDict> m;
+
+    wstring dest, src;
+    wchar_t mod;
+    int pos;
+
+	for (; fin >>  dest >> src >> mod >> pos; m.insert(make_pair(dest, Helper::DialectDict(dest, src, mod==L'='?0:mod, pos))));
+	fin.close();
+	return m;
+}());
+multimap<wstring, Helper::DialectDict> Helper::_vni([]()->multimap<wstring, Helper::DialectDict>
+{
+	wifstream fin(L"_vniDict.txt");
+	fin.imbue(locale(fin.getloc(), new codecvt_utf16<wchar_t, 0x10ffff, little_endian>));
+
+	multimap<wstring, Helper::DialectDict> m;
+
+    wstring dest, src;
+    wchar_t mod;
+    int pos;
+
+	for (; fin >>  dest >> src >> mod >> pos; m.insert(make_pair(dest, Helper::DialectDict(dest, src, mod==L'='?0:mod, pos))));
+	fin.close();
+	return m;
+}());;
+const wchar_t Helper::toneMark[][2] = {{L'z', L'0'}, {L's', L'1'}, {L'f', L'2'}, {L'r', L'3'}, {L'x', L'4'}, {L'j', L'5'}};
 
 Helper::Helper(void)
-{
-    wifstream fin(L"lowerUpperCase.txt");
-    fin.imbue(locale(fin.getloc(), new codecvt_utf16<wchar_t, 0x10ffff, little_endian>));
-
-    for (wchar_t lo, up; fin >> lo >> up;){
-        _lower.insert(make_pair(up, lo));
-        _upper.insert(make_pair(lo, up));
-	}
-
-    fin.close();
-}
+{}
 
 
 Helper::~Helper(void)
@@ -219,6 +291,24 @@ bool Helper::isNormalChar(const wchar_t c)
     return c < 0xC0;
 }
 
+bool Helper::consistOfNormalChar(const std::wstring& s)
+{
+    for (const wchar_t& c : s){
+        if (!isNormalChar(c)) return false;
+	}
+    return true;
+}
+
+bool Helper::isConsonant(const wchar_t c)
+{
+    return _consonant.find(c) != _consonant.end();
+}
+
+bool Helper::isLeadCons(const wstring& s)
+{
+    return _leadCons.find(tolower(s)) != _leadCons.end();
+}
+
 bool Helper::islower(const wchar_t c)
 {
     if (isNormalChar(c)) return ::iswlower(c) != 0;
@@ -238,7 +328,7 @@ wstring Helper::tolower(const wstring& str)
     for (const wchar_t c : str) {
         if (isNormalChar(c)) re.push_back(::towlower(c));
 		else {
-            map<wchar_t, wchar_t>::iterator lo = _lower.find(c);
+            auto lo = _lower.find(c);
             if (lo != _lower.end()) re.push_back(lo->second);
             else re.push_back(c);
 		}
@@ -249,7 +339,7 @@ wstring Helper::tolower(const wstring& str)
 wchar_t Helper::tolower(const wchar_t c)
 {
     if (isNormalChar(c)) return ::towlower(c);
-    map<wchar_t, wchar_t>::iterator lo = _lower.find(c);
+    auto lo = _lower.find(c);
 	if (lo != _lower.end()) return lo->second;
     else return c;
 }
@@ -261,7 +351,7 @@ wstring Helper::toupper(const wstring& str)
     for (const wchar_t c : str) {
         if (isNormalChar(c)) re.push_back(::towupper(c));
 		else {
-            map<wchar_t, wchar_t>::iterator up = _upper.find(c);
+            auto up = _upper.find(c);
             if (up!= _upper.end()) re.push_back(up->second);
             else re.push_back(c);
 		}
@@ -272,7 +362,43 @@ wstring Helper::toupper(const wstring& str)
 wchar_t Helper::toupper(const wchar_t c)
 {
     if (isNormalChar(c)) return ::toupper(c);
-    map<wchar_t, wchar_t>::iterator lo = _upper.find(c);
+    auto lo = _upper.find(c);
 	if (lo != _upper.end()) return lo->second;
     else return c;
+}
+
+int Helper::stripTonemark(std::wstring& w)
+{
+    for (wchar_t& c : w) {
+        if (!isNormalChar(c)){
+            auto ic = _tone.find(c);
+            if (ic != _tone.end()) {
+				c = ic->second._org;
+                return ic->second._tone;
+			}
+		}
+	}
+    return 0;
+}
+
+bool Helper::getDialectSeq(wstring& w, list<DialectDict>& l, InputMode _mode)
+{
+	switch (_mode){
+	case Helper::TELEX:
+		{
+			auto finder = _telex.equal_range(w);
+			for (auto i = finder.first; i != finder.second; i++) l.push_back(i->second);
+			break;
+		}
+	case Helper::VNI:
+		{
+			auto finder = _vni.equal_range(w);
+			for (auto i = finder.first; i != finder.second; i++) l.push_back(i->second);
+			break;
+		}
+	default:
+		break;
+	}
+    return !l.empty();
+    
 }
