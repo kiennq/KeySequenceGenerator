@@ -1,5 +1,4 @@
-﻿// KeySeqGenerator.cpp : Defines the entry point for the console application.
-//
+﻿// CKeySeqGenerator.cpp : Defines the entry point for the console application.
 
 #include "stdafx.h"
 #include <ppl.h>
@@ -14,120 +13,146 @@
 using namespace std;
 using namespace concurrency;
 
-class ProgMain
+class CProgMain
 {
 public:
-
-	ProgMain(){}
-	~ProgMain(){}
+    CProgMain()
+    {}
+    ~CProgMain()
+    {}
 
     static int main(int argc, _TCHAR* argv[])
-	{
+    {
 
-		wstring fin, fon;
-        auto mode = Helper::TELEX;
+        wstring fin, fon;
+        auto mode = CHelper::TELEX;
         int depth = 1;
         int tdepth = 1;
-        ARG_TYPE flag = NONE;
+        ArgTypeFlags flag = NONE;
         bool displayHelp = false;
 
-		if (argc == 1) {
-			wcout << _T("Input file name: ") ;
-			wcin >> fin;
-			wcout << _T("Output file name: ");
-			wcin >> fon;
+        if (argc == 1)
+        {
+            wcout << _T("Input file name: ") ;
+            wcin >> fin;
+            wcout << _T("Output file name: ");
+            wcin >> fon;
             wcout << _T("Mode:");
             wstring m;
             wcin >> m;
-			if (m == _T("telex")) {
-				mode = Helper::TELEX;
-			} else if (m == _T("vni")) {
-				mode = Helper::VNI;
-			}
+            if (m == _T("telex"))
+            {
+                mode = CHelper::TELEX;
+            }
+            else if (m == _T("vni"))
+            {
+                mode = CHelper::VNI;
+            }
             wcout << _T("Depth: ");;
             wcin >> depth;
             wcout << _T("Tone Depth: ");;
             wcin >> tdepth;
-		} else {
-			for (int i = 1; i < argc; i++) {
-				switch (flag)
-				{
-				case ProgMain::IN_FILE_NAME:
+        }
+        else
+        {
+            for (int i = 1; i < argc; i++)
+            {
+                switch (flag)
+                {
+                case CProgMain::IN_FILE_NAME:
                     fin = argv[i];
                     flag = NONE;
-					break;
-				case ProgMain::OUT_FILE_NAME:
+                    break;
+                case CProgMain::OUT_FILE_NAME:
                     fon = argv[i];
                     flag = NONE;
-					break;
-				case ProgMain::SCAN_DEPTH:
+                    break;
+                case CProgMain::SCAN_DEPTH:
                     try {
                         depth = stoi(argv[i]);
-					} catch (exception e) {
-					}
-					break;
-				case ProgMain::TONE_DEPTH:
-					try {
-						tdepth = stoi(argv[i]);
-					} catch (exception e) {
-					}
-					break;
-				case ProgMain::MODE:
-                    if (wstring(argv[i]) == _T("telex")) {
-                        mode = Helper::TELEX;
-					} else if (wstring(argv[i]) == _T("vni")) {
-                        mode = Helper::VNI;
-					}
+                    } catch (exception e)
+                    {}
+                    break;
+                case CProgMain::TONE_DEPTH:
+                    try {
+                        tdepth = stoi(argv[i]);
+                    } catch (exception e)
+                    {}
+                    break;
+                case CProgMain::MODE:
+                    if (wstring(argv[i]) == _T("telex"))
+                    {
+                        mode = CHelper::TELEX;
+                    }
+                    else if (wstring(argv[i]) == _T("vni"))
+                    {
+                        mode = CHelper::VNI;
+                    }
                     flag = NONE;
-					break;
-				case ProgMain::NONE:
-                    if (wstring(argv[i]) == _T("-i")) {
+                    break;
+                case CProgMain::NONE:
+                    if (wstring(argv[i]) == _T("-i"))
+                    {
                         flag = IN_FILE_NAME;
-					} else if (wstring(argv[i]) == _T("-o")) {
+                    }
+                    else if (wstring(argv[i]) == _T("-o"))
+                    {
                         flag = OUT_FILE_NAME;
-					} else if (wstring(argv[i]) == _T("-m")) {
+                    }
+                    else if (wstring(argv[i]) == _T("-m"))
+                    {
                         flag = MODE;
-					} else if (wstring(argv[i]) == _T("--dialect-depth")) {
+                    }
+                    else if (wstring(argv[i]) == _T("--dialect-depth"))
+                    {
                         flag = SCAN_DEPTH;
-					} else if (wstring(argv[i]) == _T("--tone-depth")) {
+                    }
+                    else if (wstring(argv[i]) == _T("--tone-depth"))
+                    {
                         flag = TONE_DEPTH;
-					}
-					else if (wstring(argv[i]) == _T("--help")) {
+                    }
+                    else if (wstring(argv[i]) == _T("--help"))
+                    {
                         displayHelp = true;
-					}
-					break;
-				default:
-					break;
-				}
-			}
-		}
+                    }
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
 
         __int64 elapsed = 0;
-        
-        if (!fin.empty() && !fon.empty()){
-			elapsed = time_call([&]{run(fin, fon, mode, depth, tdepth);});
-			wcout << L"# Run in: " << elapsed << L"ms" << endl;
-		}
-		else if (!displayHelp) showHelp();
+
+        if (!fin.empty() && !fon.empty())
+        {
+            elapsed = time_call([&]{run(fin, fon, mode, depth, tdepth);});
+            wcout << L"# Run in: " << elapsed << L"ms" << endl;
+        }
+        else if (!displayHelp)
+        {
+            showHelp();
+        }
 
         if (displayHelp) showHelp();
 
-		return 0;
-	}
+        return 0;
+    }
 
 private:
-	static enum ARG_TYPE {
-		IN_FILE_NAME,
-		OUT_FILE_NAME,
-		MODE,
+    static enum ArgTypeFlags
+    {
+        IN_FILE_NAME,
+        OUT_FILE_NAME,
+        MODE,
         SCAN_DEPTH,
         TONE_DEPTH,
-		NONE,
-	};
+        NONE,
+    };
 
-    static void showHelp() 
-	{
-		wcout << _T("-i INPUT_TEXT_FILE -o OUTPUT_TEXT_FILE [-m {telex|vni}] [--dialect-depth DEPTH] [--tone-depth TDEPTH] [--help]") << endl;
+    static void showHelp()
+    {
+        wcout << _T("-i INPUT_TEXT_FILE -o OUTPUT_TEXT_FILE [-m {telex|vni}] [--dialect-depth DEPTH] [--tone-depth TDEPTH] [--help]") << endl;
         wcout << endl;
         wcout << _T("--help\t\t\t: Show this message") << endl;
         wcout << _T("-i\t\t\t: Input file name") << endl;
@@ -137,44 +162,46 @@ private:
         wcout << _T("--tone-depth\t\t: tone scan depth") << endl;
         wcout << endl;
         wcout << _T("ex: -i test.txt -o out.txt") <<endl;
-	}
+    }
 
-    static void run(const wstring& fin, const wstring& fon, Helper::InputMode mode, int depth, int tdepth)
-	{
+    static void run(const wstring& fin, const wstring& fon, CHelper::InputMode mode, int depth, int tdepth)
+    {
 
         list<wstring> lWords;
-		wcout << _T("# Loading ") << fin << endl;
-        Helper::readFileUTF16(fin, lWords);
-		wcout << _T("# Reading ") << lWords.size() << _T(" word(s)") << endl;
-        unique_ptr<KeySeqGenerator> keySeq(new KeySeqGenerator(mode, depth, tdepth));
+        wcout << _T("# Loading ") << fin << endl;
+        CHelper::readFileUTF16(fin, lWords);
+        wcout << _T("# Reading ") << lWords.size() << _T(" word(s)") << endl;
+        unique_ptr<CKeySeqGenerator> keySeq(new CKeySeqGenerator(mode, depth, tdepth));
 
         combinable<list<pair<wstring, wstring>>> pout;
         list<pair<wstring, wstring>> out;
 
         // Thread safe
-        parallel_for_each(lWords.begin(), lWords.end(), [&](wstring& w){
+        parallel_for_each(lWords.begin(), lWords.end(), [&](wstring& w)
+        {
             pout.local().splice(pout.local().end(), keySeq->generateSequence(w));
-		});
-        
-		pout.combine_each([&](list<pair<wstring, wstring>>& local){
+        });
+
+        pout.combine_each([&](list<pair<wstring, wstring>>& local)
+        {
             out.splice(out.end(), local);
-		});
+        });
 
-		wcout << _T("# Wrote out ") << out.size() << _T(" sequence(s) to file ") << fon << endl;
-        Helper::writeFileUTF16(fon, out);
-	}
+        wcout << _T("# Wrote out ") << out.size() << _T(" sequence(s) to file ") << fon << endl;
+        CHelper::writeFileUTF16(fon, out);
+    }
 
-	template <class Function>
-	static	__int64 time_call(Function&& f)
-	{
-		__int64 begin = GetTickCount();
-		f();
-		return GetTickCount() - begin;
-	}
+    template <class Function>
+    static __int64 time_call(Function&& f)
+    {
+        __int64 begin = GetTickCount();
+        f();
+        return GetTickCount() - begin;
+    }
 };
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-    return ProgMain::main(argc, argv);
+    return CProgMain::main(argc, argv);
 }
 
